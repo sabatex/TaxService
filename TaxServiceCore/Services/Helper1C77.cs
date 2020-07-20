@@ -1,6 +1,5 @@
-﻿using ntics;
-using ntics.DateTimeExtensions;
-using ntics.ClassExtensions;
+﻿using sabatex.Extensions.ClassExtensions;
+using sabatex.Extensions.DateTimeExtensions;
 using sabatex.TaxUA;
 using sabatex.TaxUA.CommonTypes;
 using sabatex.V1C77;
@@ -464,7 +463,7 @@ namespace TaxService.Services
         /// <param name="org"></param>
         /// <param name="period"></param>
         /// <param name="CallBack"></param>
-        public static async Task<List<J1201010>> GetTAXES(IOrganization org, Connection con, ntics.DateTimeExtensions.Period period)
+        public static async Task<List<J1201010>> GetTAXES(IOrganization org, Connection con, Period period)
         {
             List<J1201010> taxes = new List<J1201010>();
             GlobalObject1C77 global;

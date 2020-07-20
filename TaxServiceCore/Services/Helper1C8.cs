@@ -1,6 +1,5 @@
-﻿using ntics;
-using ntics.ClassExtensions;
-using ntics.DateTimeExtensions;
+﻿using sabatex.Extensions.ClassExtensions;
+using sabatex.Extensions.DateTimeExtensions;
 using sabatex.TaxUA;
 using sabatex.V1C77;
 using System;

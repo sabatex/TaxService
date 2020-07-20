@@ -1,5 +1,5 @@
-﻿using ntics;
-using ntics.DateTimeExtensions;
+﻿using sabatex.Extensions;
+using sabatex.Extensions.DateTimeExtensions;
 using System;
 using System.Collections.Generic;
 using System.IO;

@@ -1,5 +1,5 @@
-﻿using ntics;
-using ntics.ClassExtensions;
+﻿using sabatex.Extensions;
+using sabatex.Extensions.ClassExtensions;
 using sabatex.V1C77;
 using System;
 using System.Collections.Generic;
@@ -15,8 +15,8 @@ namespace TaxService.ViewModels
     {
         public OrganizationViewModel()
         {
-            PlatformSource = ntics.ClassExtensions.EnumExtensions.GetEnumListWithDescription(typeof(EPlatform1C));
-            BaseTypeSource = ntics.ClassExtensions.EnumExtensions.GetEnumListWithDescription(typeof(EServerLocation));
+            PlatformSource = EnumExtensions.GetEnumListWithDescription(typeof(EPlatform1C));
+            BaseTypeSource = EnumExtensions.GetEnumListWithDescription(typeof(EServerLocation));
         }
 
         Organization _organization;
@@ -136,7 +136,7 @@ namespace TaxService.ViewModels
         void updateConfigType()
         {
             bool oldIs1CV7 = (PlatformType & Connection.Platform1CV7) != 0;
-            ConfigSourсe = ntics.ClassExtensions.EnumExtensions.GetEnumListWithDescription(typeof(E1CConfigType))
+            ConfigSourсe = EnumExtensions.GetEnumListWithDescription(typeof(E1CConfigType))
                           .Where(s=>(((E1CConfigType)s.Item1 & Connection.ConfigType1C77) != 0) == oldIs1CV7).ToArray();
         }
 
