@@ -1,0 +1,55 @@
+﻿<Window x:Class="TaxService.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:nticsControl="clr-namespace:sabatex.WPF.Controls;assembly=sabatex.WPF.Controls"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:TaxService"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800" Loaded="Window_Loaded">
+    
+    
+    <Window.CommandBindings>
+        <CommandBinding Command="local:Command.ImportTax" Executed="CommandBinding_Import" CanExecute="CanExecute_ImportTax" />
+        <CommandBinding Command="local:Command.ExportTax" Executed="CommandBinding_Export" />
+    </Window.CommandBindings>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+        </Grid.RowDefinitions>
+        <ToolBar >
+            <ToggleButton Command="local:Command.ImportTax" Content="{Binding RelativeSource={RelativeSource Self},Path=Command.Text}" />
+            <!--<ToggleButton Command="local:Command.ExportTax" Content="{Binding RelativeSource={RelativeSource Self},Path=Command.Text}" />-->
+        </ToolBar>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"></ColumnDefinition>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"></RowDefinition>
+                <RowDefinition Height="Auto"></RowDefinition>
+                <RowDefinition Height="Auto"></RowDefinition>
+            </Grid.RowDefinitions>
+            <Label>Організація</Label>
+            <Label Grid.Row="1">Період обробки</Label>
+            <Label Grid.Row="2">Шлях до папки вивантаження податкових</Label>
+            <nticsControl:ComboBoxWithButton Grid.Row="0" Grid.Column="1" ButtonClick="ComboBoxWithButton_Click" ItemsSource="{Binding Path=Organizations}" SelectedItem="{Binding Path=Config.Organization,Mode=TwoWay}"/>
+            <nticsControl:DateTimePeriod Grid.Row="1" Grid.Column="1" Period="{Binding Path=Config.SelectedPeriod}"/>
+            <nticsControl:FolderPath Grid.Row="2" Grid.Column="1" SelectedFolder="{Binding Path=Config.TaxStorePath}"/>
+        </Grid>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="5,5">
+            <Button Command="local:Command.ImportTax"
+                    Template="{StaticResource RoundedButtonTemplate}">
+            </Button>
+        </StackPanel>
+
+        <TextBox Grid.Row="3" Name="TextLog">
+        </TextBox>
+    </Grid>
+
+</Window>
