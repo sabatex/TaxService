@@ -13,14 +13,13 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using TaxService.Models;
-using TaxService.ViewModels;
 using System.IO;
-using TaxService.Views;
 using System.Diagnostics;
 using sabatex.WPF.Controls.Diagnostics;
-using TaxService.Data;
-using Microsoft.EntityFrameworkCore;
 using TaxService.Services;
+using System.Xml;
+using sabatex.TaxUA;
+using TaxService.UserControls;
 
 namespace TaxService
 {
@@ -29,50 +28,95 @@ namespace TaxService
     /// </summary>
     public partial class MainWindow : Window
     {
-        string _configFilePath = Directory.GetCurrentDirectory() + @"\config.json";
-        MainWindowViewModel mainWindowViewModel;
         public MainWindow()
         {
-           InitializeComponent();
+            InitializeComponent();
         }
+
+        private void setVisibleFrame(WindowFrames frame)
+        {
+            organizationsFrame.Visibility = Visibility.Collapsed;
+            organizationFrame.Visibility = Visibility.Collapsed;
+            mainWindow.Visibility = Visibility.Collapsed;
+            switch(frame)
+            {
+                case WindowFrames.Main:
+                    mainWindow.Visibility = Visibility.Visible;
+                    break;
+                case WindowFrames.Organization:
+                    organizationFrame.Visibility = Visibility.Visible;
+                    break;
+                case WindowFrames.Organizations:
+                    organizationsFrame.Visibility = Visibility.Visible;
+                    break;
+            }
+
+        }
+
+        private void update()
+        {
+            setVisibleFrame(WindowFrames.Main);
+        }
+
 
         protected override void OnInitialized(EventArgs e)
         {
             base.OnInitialized(e);
-            //using (var db = new TaxServiceDbContext())
-            //{
-            //    db.Database.Migrate();
-            //}
-
-
-            //this.DataContext = new MainWindowViewModel();
-            //mainWindowViewModel = new MainWindowViewModel();
-            //this.DataContext = mainWindowViewModel;
+            Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
             Trace.Listeners.Add(new TextBoxTraceListener(TextLog));
         }
 
         protected override void OnClosed(EventArgs e)
         {
             base.OnClosed(e);
-            mainWindowViewModel.SaveState();
+            ConfigStore.CurrentConfig.SaveToFile();
         }
 
         private void ComboBoxWithButton_Click(object sender, RoutedEventArgs e)
         {
-            OrganizationListView organizationListView = new OrganizationListView();
-            organizationListView.Owner = this;
-            organizationListView.ShowDialog();
+            setVisibleFrame(WindowFrames.Organizations);
+            organizationsFrame.Update(ConfigStore.CurrentConfig);
         }
 
+        #region organizations logic
+        private void organizationsClose(object sender, RoutedEventArgs e)
+        {
+            update();
+        }
+        private void organizationsAddNew(object sender, RoutedEventArgs e)
+        {
+            setVisibleFrame(WindowFrames.Organization);
+            organizationFrame.Initialize();
+        }
+        private void organizationsOpenItem(object sender, RoutedEventArgs e)
+        {
+            setVisibleFrame(WindowFrames.Organization);
+            organizationFrame.Initialize((e as OrganizationRoutedEventArgs).Organization);
+        }
+        #endregion
+        // organization logic
+        #region organization logic
+        private void organizationClose(object sender, RoutedEventArgs e)
+        {
+            setVisibleFrame(WindowFrames.Organizations);
+        }
+        private void organizationOk(object sender, RoutedEventArgs e)
+        {
+            setVisibleFrame(WindowFrames.Organizations);
+            organizationsFrame.Update(ConfigStore.CurrentConfig);
+        }
+        #endregion
+
         public bool IsImportBusy { get; set; }
-        private async void CommandBinding_Import(object sender, ExecutedRoutedEventArgs e)
+        public bool IsExportBusy { get; set; }
+        private async void importFrom1C(object sender, RoutedEventArgs e)
         {
             IsImportBusy = true;
-            Trace.WriteLine("Import taxes documents started!");
+            Trace.WriteLine("Вивантаження податкових накладних з 1С.");
             await Task.Delay(5);
             try
             {
-                var taxes = await TaxService.Services.Helpers1C77.GetTAXES(mainWindowViewModel.Config.Organization, mainWindowViewModel.Config.Organization, mainWindowViewModel.Config.SelectedPeriod);
+                var taxes = await TaxService.Services.Helpers1C77.GetTAXES(ConfigStore.CurrentConfig.Organization, ConfigStore.CurrentConfig.Organization, ConfigStore.CurrentConfig.SelectedPeriod);
                 Trace.WriteLine("Import taxes documents ended!\n");
                 Trace.WriteLine("Розпочато збереження податкових в XML");
                 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
@@ -81,29 +125,71 @@ namespace TaxService
                     DateTime startDate = DateTime.Now;
                     var text = d.GetAsXML();
                     var en = Encoding.GetEncoding(1251);
-                    File.WriteAllText(mainWindowViewModel.Config.TaxStorePath + "\\" + d.GetXMLFileName(), text, en);
-                    //using (System.IO.StreamWriter file = new System.IO.StreamWriter(mainWindowViewModel.Config.TaxStorePath + "\\" + d.GetXMLFileName(), false, en))
-                    //{
-                        
-                    //    await file.WriteAsync(text);
-                    //}
-                   TimeSpan time = DateTime.Now.Subtract(startDate);
-                   Trace.TraceInformation("Податкова накладна №{0} від {1} збережена як {2} (час виконання - {3})", d.C_DOC_CNT.ToString(),d.HFILL,d.GetXMLFileName(),time.ToString("c"));
-                   await Task.Delay(100); 
+                    File.WriteAllText(ConfigStore.CurrentConfig.TaxStorePath + "\\" + d.GetXMLFileName(), text, en);
+                    TimeSpan time = DateTime.Now.Subtract(startDate);
+                    Trace.TraceInformation("Податкова накладна №{0} від {1} збережена як {2} (час виконання - {3})", d.C_DOC_CNT.ToString(), d.HFILL, d.GetXMLFileName(), time.ToString("c"));
+                    await Task.Delay(100);
                 }
                 Trace.WriteLine("Закінчено збереження податкових в XML");
             }
             catch (Exception ex)
             {
-                Trace.WriteLine("Спроба імпортувати податкові документи не вдалася по причині "+ ex.Message);
+                Trace.WriteLine("Спроба імпортувати податкові документи не вдалася по причині " + ex.Message);
             }
             IsImportBusy = false;
             CommandManager.InvalidateRequerySuggested();
         }
-        
-        private void CommandBinding_Export(object sender, ExecutedRoutedEventArgs e)
-        {
 
+        private async void exportTo1C(object sender, RoutedEventArgs e)
+        {
+            IsExportBusy = true;
+            Trace.WriteLine("Завантаження податкових в 1С7.7.");
+            await Task.Delay(5);
+            List<XmlDocument> documents = new List<XmlDocument>();
+            Trace.WriteLine(DateTime.Now.ToString() + "Зчитування податкових з XML файлів.");
+            string[] files = Directory.GetFiles(ConfigStore.CurrentConfig.TaxExportStorePath, "*.XML");
+            foreach (string FileName in files)
+            {
+                try
+                {
+                    XmlDocument doc = new XmlDocument();
+                    doc.Load(FileName);
+                    XmlNode DH = doc.SelectSingleNode("/DECLAR/DECLARHEAD");
+                    var doc_type = DH["C_DOC"].InnerText;
+                    var doc_ver = DH["C_DOC_SUB"].InnerText;
+                    if (doc_type != "J12" || doc_ver != "010")
+                    {
+                        Trace.WriteLine($"Файл {FileName}  з C_DOC={doc_type} C_DOC_SUB={doc_ver} не відповідає підтримуваній версії. ");
+                        continue;
+                    }
+
+                    XmlNode DB = doc.SelectSingleNode("/DECLAR/DECLARBODY");
+                    DateTime HFILL = DB["HFILL"].InnerText.GetTAXDate().Value;
+                    if (HFILL < ConfigStore.CurrentConfig.SelectedPeriod.Begin || HFILL > ConfigStore.CurrentConfig.SelectedPeriod.End)
+                    {
+                        Trace.WriteLine($"Файл {FileName}  з HFILL={HFILL} знаходиться за межами визначеного періоду завантаження. ");
+                        continue;
+                    }
+                    documents.Add(doc);
+                }
+                catch (Exception ex)
+                {
+                    Trace.WriteLine($"Спроба відкрити документ {FileName} не вдалася по причині " + ex.Message);
+                }
+            }
+
+            if (documents.Count != 0)
+            {
+                await Helpers1C77.PutTaxes(documents, ConfigStore.CurrentConfig.Organization, ConfigStore.CurrentConfig.Organization, ConfigStore.CurrentConfig.SelectedPeriod);
+
+            }
+            else
+            {
+                Trace.WriteLine(DateTime.Now.ToString() + "Відсутні файли податкових які відповідають заданим вимогам.");
+            }
+
+            IsExportBusy = false;
+            CommandManager.InvalidateRequerySuggested();
         }
 
         private void CanExecute_ImportTax(object sender, CanExecuteRoutedEventArgs e)
@@ -114,17 +200,20 @@ namespace TaxService
                 e.CanExecute = true;
 
         }
+        private void CanExecute_ExportTax(object sender, CanExecuteRoutedEventArgs e)
+        {
+            if (IsExportBusy)
+                e.CanExecute = false;
+            else
+                e.CanExecute = true;
+
+        }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            mainWindowViewModel = new MainWindowViewModel();
-            this.DataContext = mainWindowViewModel;
+            this.DataContext = ConfigStore.CurrentConfig;
         }
     }
 
-    public static class Command
-    {
-        public static readonly RoutedUICommand ImportTax = new RoutedUICommand("Імпорт податкових",nameof(ImportTax),typeof(MainWindow));
-        public static readonly RoutedUICommand ExportTax = new RoutedUICommand("Експорт податкових", nameof(ExportTax), typeof(MainWindow));
-    }
+
 }

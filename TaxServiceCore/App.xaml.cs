@@ -1,12 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
-using TaxService.Data;
 
 namespace TaxServiceCore
 {
@@ -18,10 +16,10 @@ namespace TaxServiceCore
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
-            using (var db = new TaxServiceDbContext())
-            {
-                db.Database.Migrate();
-            }
+            //using (var db = new TaxServiceDbContext())
+            //{
+            //    db.Database.Migrate();
+            //}
 
         }
     }

@@ -35,7 +35,14 @@ namespace TaxService.Models
         public int J12010_StartNumber { get; set; }
         public bool AutoPDV { get; set; }
         public bool IsReadOnly { get; set; } = false;
+        /// <summary>
+        /// Код фірми в довіднику 1С
+        /// </summary>
         public string FirmCode { get; set; }
+        /// <summary>
+        /// Вказуємо INN як-що він відрізняється від основного 
+        /// </summary>
+        public string EDRPOUConsolidate { get; set; }
 
         public void MarkDelete()
         {

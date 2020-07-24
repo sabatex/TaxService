@@ -1,4 +1,4 @@
-﻿<Window x:Class="TaxService.MainWindow"
+﻿<Window xmlns:UserControls="clr-namespace:TaxService.UserControls"  x:Class="TaxService.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:nticsControl="clr-namespace:sabatex.WPF.Controls;assembly=sabatex.WPF.Controls"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -7,49 +7,62 @@
         xmlns:local="clr-namespace:TaxService"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800" Loaded="Window_Loaded">
-    
-    
-    <Window.CommandBindings>
-        <CommandBinding Command="local:Command.ImportTax" Executed="CommandBinding_Import" CanExecute="CanExecute_ImportTax" />
-        <CommandBinding Command="local:Command.ExportTax" Executed="CommandBinding_Export" />
-    </Window.CommandBindings>
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"></RowDefinition>
-            <RowDefinition Height="Auto"></RowDefinition>
-            <RowDefinition Height="Auto"></RowDefinition>
-            <RowDefinition Height="*"></RowDefinition>
-        </Grid.RowDefinitions>
-        <ToolBar >
-            <ToggleButton Command="local:Command.ImportTax" Content="{Binding RelativeSource={RelativeSource Self},Path=Command.Text}" />
-            <!--<ToggleButton Command="local:Command.ExportTax" Content="{Binding RelativeSource={RelativeSource Self},Path=Command.Text}" />-->
-        </ToolBar>
 
-        <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"></ColumnDefinition>
-                <ColumnDefinition Width="*"></ColumnDefinition>
-            </Grid.ColumnDefinitions>
+
+    <Grid>
+        <Grid x:Name="mainWindow" Visibility="Visible">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"></RowDefinition>
-                <RowDefinition Height="Auto"></RowDefinition>
-                <RowDefinition Height="Auto"></RowDefinition>
+                <RowDefinition Height="*"></RowDefinition>
             </Grid.RowDefinitions>
-            <Label>Організація</Label>
-            <Label Grid.Row="1">Період обробки</Label>
-            <Label Grid.Row="2">Шлях до папки вивантаження податкових</Label>
-            <nticsControl:ComboBoxWithButton Grid.Row="0" Grid.Column="1" ButtonClick="ComboBoxWithButton_Click" ItemsSource="{Binding Path=Organizations}" SelectedItem="{Binding Path=Config.Organization,Mode=TwoWay}"/>
-            <nticsControl:DateTimePeriod Grid.Row="1" Grid.Column="1" Period="{Binding Path=Config.SelectedPeriod}"/>
-            <nticsControl:FolderPath Grid.Row="2" Grid.Column="1" SelectedFolder="{Binding Path=Config.TaxStorePath}"/>
+            <Grid Grid.Row="0" Margin="5,5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="0" Click="importFrom1C" Template="{StaticResource RoundedButtonTemplate}" Margin="5,5,5,5" Height="30">Вивантажити податкові з 1С</Button>
+                <Button Grid.Column="1" Click="exportTo1C"  Template="{StaticResource RoundedButtonTemplate}" Margin="5,5,5,5" >Завантажити податкові в 1С</Button>
+            </Grid>
+            <Border Grid.Row="1" Padding="5" BorderThickness="1" CornerRadius="5" BorderBrush="Black">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"></ColumnDefinition>
+                            <ColumnDefinition Width="*"></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"></RowDefinition>
+                            <RowDefinition Height="Auto"></RowDefinition>
+                            <RowDefinition Height="Auto"></RowDefinition>
+                            <RowDefinition Height="Auto"></RowDefinition>
+                        </Grid.RowDefinitions>
+                        <Label>Організація</Label>
+                        <Label Grid.Row="1">Період обробки</Label>
+                        <Label Grid.Row="2">Шлях до папки вивантаження податкових</Label>
+                        <Label Grid.Row="3">Шлях до папки завантаження податкових</Label>
+                        <nticsControl:ComboBoxWithButton Grid.Row="0" Grid.Column="1" ButtonClick="ComboBoxWithButton_Click" ItemsSource="{Binding Path=Organizations}" SelectedItem="{Binding Path=Organization,Mode=TwoWay}"/>
+                        <nticsControl:DateTimePeriod Grid.Row="1" Grid.Column="1" Period="{Binding Path=SelectedPeriod}"/>
+                        <nticsControl:FolderPath Grid.Row="2" Grid.Column="1" SelectedFolder="{Binding Path=TaxStorePath}"/>
+                        <nticsControl:FolderPath Grid.Row="3" Grid.Column="1" SelectedFolder="{Binding Path=TaxExportStorePath}"/>
+                    </Grid>
+
+                    <TextBox Grid.Row="1" Name="TextLog">
+                    </TextBox>
+
+                </Grid>
+            </Border>
+
         </Grid>
-        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="5,5">
-            <Button Command="local:Command.ImportTax"
-                    Template="{StaticResource RoundedButtonTemplate}">
-            </Button>
-        </StackPanel>
-
-        <TextBox Grid.Row="3" Name="TextLog">
-        </TextBox>
+        <UserControls:OrganizationsUserControl x:Name="organizationsFrame"  Visibility="Collapsed"
+                                               CloseOrgenizationClick="organizationsClose"
+                                               NewOrgenizationClick="organizationsAddNew"
+                                               OpenOrgenizationClick="organizationsOpenItem"/>
+        <UserControls:OrganizationUserControl x:Name="organizationFrame" Visibility="Collapsed"
+                                              CancelClick="organizationClose"
+                                              OkClick="organizationOk"/>
     </Grid>
-
 </Window>

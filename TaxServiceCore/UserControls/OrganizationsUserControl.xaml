@@ -1,0 +1,32 @@
+﻿<UserControl x:Class="TaxService.UserControls.OrganizationsUserControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:TaxService.UserControls"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800" x:Name="userControl">
+ 
+    
+<Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0" Margin="5,5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0" Template="{StaticResource RoundedButtonTemplate}" Margin="5,5,5,5" Click="closeClick">Закрити</Button>
+            <Button Grid.Column="1" Template="{StaticResource RoundedButtonTemplate}" Margin="5,5,5,5" Height="30" Click="addNewClick">Додати</Button>
+            <Button Grid.Column="2" Template="{StaticResource RoundedButtonTemplate}" Margin="5,5,5,5" Click="openItemClick">Редагувати</Button>
+            <Button Grid.Column="3" Template="{StaticResource RoundedButtonTemplate}" Margin="5,5,5,5" Click="deleteClick">Видалити</Button>
+        </Grid>
+        <Border Grid.Row="1" Padding="5" BorderThickness="1" CornerRadius="5" BorderBrush="Black">
+            <ListBox ItemsSource="{Binding  ElementName=userControl, Path=Organizations, Mode=TwoWay}" x:Name="organizationsList" />
+        </Border>
+    </Grid>
+</UserControl>

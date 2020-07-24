@@ -9,6 +9,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
+using TaxService.Models;
 
 namespace TaxService.Services
 {
@@ -214,6 +216,11 @@ namespace TaxService.Services
         }
         private static string Get1C77_TINSEL(this COMObject doc, IOrganization org)
         {
+            var organization = org as Organization;
+            if (organization != null)
+            {
+                if (organization.EDRPOUConsolidate != "") return organization.EDRPOUConsolidate;
+            }
             switch (doc.GLOBAL.Connection.ConfigType)
             {
                 case E1CConfigType.Uaservice:
@@ -512,6 +519,154 @@ namespace TaxService.Services
             return taxes;
 
         }
+    
+    
+        public static async Task PutTaxes(List<XmlDocument> documents, IOrganization org,Connection con,Period period)
+        {
+            try
+            {
+                using (GlobalObject1C77 global = GlobalObject1C77.GetConnection(con))
+                {
+                    COMObject VATType = global.CreateObject("Справочник.ВидыНДС");
+                    if (VATType.MethodDouble("НайтиПоНаименованию", "Платникам ПДВ", 0) == 0)
+                    {
+                        Trace.WriteLine(DateTime.Now.ToString() + "ERROR NOT Look in 1C7.7  Платникам ПДВ 20%");
+                    }
+
+                    Dictionary<string, string> Partners = new Dictionary<string, string>();
+                    Trace.WriteLine(DateTime.Now.ToString() + "Load all partners from 1C7.7");
+                    var Partners1C77 = global.CreateObject("Справочник.Контрагенты");
+                    if (Partners1C77.MethodDouble("SelectItems", 0) == 1)
+                    {
+                        while (Partners1C77.MethodDouble("GetItem") == 1)
+                        {
+                            if (Partners1C77.MethodDouble("IsGroup") == 0)
+                            {
+                                string CodeINN = Partners1C77.GetPropertyString("ИНН");
+                                if (CodeINN.Length == 0) continue;
+
+                                if (Partners.ContainsKey(Partners1C77.GetPropertyString("ИНН")))
+                                    Trace.WriteLine(DateTime.Now.ToString() + "Dublicate INN code for " + Partners1C77.GetPropertyString("ИНН") + " " + Partners1C77.GetPropertyString("Description"));
+                                else
+                                    Partners.Add(Partners1C77.GetPropertyString("ИНН"), Partners1C77.GetPropertyString("Code"));
+                            }
+                        }
+                    }
+
+
+                    Trace.WriteLine(DateTime.Now.ToString() + "Load all Inner TAX documents from 1C7.7");
+                    Dictionary<string, TAXDoccument> TAXDoccuments = new Dictionary<string, TAXDoccument>();
+                    var TaxDocs = global.CreateObject("Документ.РегистрацияПН");
+
+                    if (TaxDocs.MethodDouble("SelectDocuments", period.Begin, period.End) == 1)
+                    {
+                        while (TaxDocs.MethodDouble("GetDocument") == 1)
+                        {
+                            TAXDoccument td = new TAXDoccument();
+                            td.Date = TaxDocs.GetPropertyDateTime("DocDate");
+                            td.Number = TaxDocs.GetPropertyString("Номер");
+                            td.PartnerINN = TaxDocs.GetPropertyObject("Контрагент").GetPropertyString("ИНН");
+                            td.SummDoc = (decimal)TaxDocs.GetPropertyDouble("Сумма");
+                            td.VAT = (decimal)TaxDocs.GetPropertyDouble("НДС");
+                            TAXDoccuments.Add(td.PartnerINN + " " + td.Date.ToShortDateString() + " " + td.Number, td);
+                        }
+
+                    }
+
+
+                    foreach (var doc in documents)
+                    {
+                        XmlNode DB = doc.SelectSingleNode("/DECLAR/DECLARBODY");
+                        string HKBUY = DB["HKBUY"].InnerText;
+                        if (HKBUY != global.Get1C77_HKSEL(org))
+                        {
+                            Trace.WriteLine($"Податкова з ІПН {HKBUY }");
+                            continue;
+                        }
+
+                        string HNUM = DB["HNUM"].InnerText;
+                        // номер філії
+                        string HNUM2 = DB["HNUM2"].InnerText;
+                        if (HNUM2 != "")
+                            HNUM += "//" + HNUM2;
+                        string HKSEL = DB["HKSEL"].InnerText;
+                        string HNAMESEL = DB["HNAMESEL"].InnerText;
+                        //string H02G1S = DB["H02G1S"].InnerText;
+                        string R03G11 = DB["R03G11"].InnerText;
+                        string R04G11 = DB["R04G11"].InnerText;
+                        DateTime HFILL = DB["HFILL"].InnerText.GetTAXDate().Value;
+                        // check inn firm
+                        if (Partners.ContainsKey(HKSEL))
+                        {
+                            // check document 
+                            if (TAXDoccuments.ContainsKey(HKSEL + " " + HFILL.ToShortDateString() + " " + HNUM))
+                            {
+                                Trace.WriteLine(DateTime.Now.ToString() + " doc dont add to 1C7.7 " + HKSEL + " " + HNUM + " " + HFILL.ToShortDateString() +
+                                                                        " " + R03G11.ToString() + " " + R04G11.ToString());
+                                continue;
+
+                            }
+
+                            if (Partners1C77.MethodDouble("FindByCode", Partners[HKSEL], 0) == 0)
+                            {
+                                Trace.WriteLine(DateTime.Now.ToString() + "ERROR!!! not find INN in 1C7.7 ");
+                                continue;
+                            }
+                            Trace.Write(DateTime.Now.ToString() + " Add doc to 1C7.7 " + HKSEL + " " + HNUM + " " + HFILL.ToShortDateString() +
+                                                                        " " + R03G11.ToString() + " " + R04G11.ToString());
+                            COMObject getФормыРасчета(GlobalObject1C77 global, string value)
+                            {
+                                switch (value)
+                                {
+                                    case "готівка": return global.EvalExpr("Перечисление.ФормыРасчета.Наличными");
+                                    case "чек": return global.EvalExpr("Перечисление.ФормыРасчета.НаличнымиЧерезЭККА");
+                                    default: return global.EvalExpr("Перечисление.ФормыРасчета.СРасчетногоСчета");
+                                }
+
+                            }
+
+                            COMObject FR = getФормыРасчета(global, "рахунок");
+
+
+                            var VN = global.EvalExpr("Перечисление.ВидНаловой.ПНЕ");
+
+                            var TaxDoc = global.CreateObject("Документ.РегистрацияПН");
+                            TaxDoc.Method("Новый");
+                            TaxDoc.SetProperty("DocDate", HFILL);
+                            TaxDoc.SetProperty("Контрагент", Partners1C77.Method("CurrentItem"));
+                            TaxDoc.SetProperty("Номер", HNUM);
+                            TaxDoc.SetProperty("ВидНДС", VATType.Method("CurrentItem"));
+                            TaxDoc.SetProperty("ФормаРасчета", FR);
+                            TaxDoc.SetProperty("НДС", R03G11);
+                            TaxDoc.SetProperty("Сумма", R04G11);
+                            TaxDoc.SetProperty("ТипПодатковой", 1);
+                            TaxDoc.SetProperty("ДатаВиписки", HFILL);
+                            TaxDoc.SetProperty("ВидНаловой", VN);
+                            TaxDoc.SetProperty("Уточнена", 0);
+                            try
+                            {
+                                TaxDoc.Method("Write");
+                                Trace.WriteLine(" OK");
+
+                            }
+                            catch (Exception ex)
+                            {
+                                Trace.WriteLine($"ERROR {ex.Message}");
+                            }
+
+
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Trace.WriteLine($"Помилка: {e.Message}");
+                return;
+            }
+            await Task.Delay(10);
+        }
+    
     }
 
 }

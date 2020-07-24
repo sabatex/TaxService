@@ -8,15 +8,9 @@
 
   <ItemGroup>
     <PackageReference Include="CalcBinding" Version="2.5.2" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="3.1.6" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="3.1.6" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="3.1.6">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
     <PackageReference Include="sabatex.Extensions" Version="3.1.4" />
     <PackageReference Include="sabatex.TaxUA" Version="3.1.4" />
-    <PackageReference Include="sabatex.V1C77" Version="3.1.4" />
+    <PackageReference Include="sabatex.V1C77" Version="3.1.9" />
     <PackageReference Include="sabatex.WPF.Controls" Version="3.1.4" />
     <PackageReference Include="System.Text.Encoding.CodePages" Version="4.7.1" />
   </ItemGroup>
@@ -26,12 +20,6 @@
       <SubType>Code</SubType>
       <DependentUpon>MainWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Update="Views\OrganizationListView.xaml.cs">
-      <DependentUpon>OrganizationListView.xaml</DependentUpon>
-    </Compile>
-    <Compile Update="Views\OrganizationView.xaml.cs">
-      <DependentUpon>OrganizationView.xaml</DependentUpon>
-    </Compile>
   </ItemGroup>
 
   <ItemGroup>
@@ -39,12 +27,6 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Update="Styles.xaml">
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Update="Views\OrganizationListView.xaml">
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Update="Views\OrganizationView.xaml">
       <SubType>Designer</SubType>
     </Page>
   </ItemGroup>
